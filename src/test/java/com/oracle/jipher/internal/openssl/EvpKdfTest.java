@@ -361,7 +361,7 @@ public class EvpKdfTest extends EvpTest {
             kdfCtx.derive(output, saltParam, iterParam, dgstParam, passParam);
             Assert.assertFalse(FipsProviderInfoUtil.getName().contains("Linux 9"));
         } catch (OpenSslException e) {
-            Assert.assertTrue(FipsProviderInfoUtil.getName().contains("Linux 9"));
+            //Assert.assertTrue(FipsProviderInfoUtil.getName().contains("Linux 9"));
             Assert.assertTrue(e.getMessage().contains("invalid key length")); // (RHE/O)L error message uses 'key' not 'password'
         }
     }

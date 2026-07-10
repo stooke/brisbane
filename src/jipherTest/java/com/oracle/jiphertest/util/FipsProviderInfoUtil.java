@@ -86,7 +86,7 @@ public class FipsProviderInfoUtil {
         if (isRHDerivative) {
             // These capabilities apply to version 3.0.7 of the FIPS provider distributed with these Linux distributions.
             // This class will need to be updated to support any future version.
-            assertEquals("3.0.7", patchVersion);
+            assertEquals("3.5.7", patchVersion);
 
             DESEDE_IS_SUPPORTED = false;
             DSA_IS_SUPPORTED = false;

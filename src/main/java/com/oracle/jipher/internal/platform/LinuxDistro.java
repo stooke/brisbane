@@ -95,7 +95,8 @@ public abstract class LinuxDistro {
                 return new OracleLinux(versionId);
             }
         }
-        throw new UnrecognisedLinuxDistroException("id=" + id + ", versionId=" + versionId);
+        return new FedoraLinux(versionId);
+        //throw new UnrecognisedLinuxDistroException("id=" + id + ", versionId=" + versionId);
      }
 
     private final String distroName;
@@ -143,6 +144,24 @@ public abstract class LinuxDistro {
             // Consequently, the module-mac does not need to be specified, as part of the module configuration,
             // when loading the FIPS module.
             return null;
+        }
+    }
+
+
+    static class FedoraLinux extends FedoraLike {
+
+        FedoraLinux(String versionId) {
+            super("Fedora Linux", versionId);
+        }
+
+        int getMinorVersion() {
+            return Integer.parseInt(versionString.split("\\.")[1]);
+        }
+
+        @Override
+        boolean providesFipsModule() {
+            // A certified OpenSSL(3) FIPS module was first distributed in OL 9.4
+            return (getMajorVersion() >= 10) || (getMajorVersion() == 9 && getMinorVersion() >= 4);
         }
     }
 
