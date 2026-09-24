@@ -82,12 +82,13 @@ public class FipsProviderInfoUtil {
         if (isRHDerivative) {
             // These capabilities apply to version 3.0.7 of the FIPS provider distributed with these Linux distributions.
             // This class will need to be updated to support any future version.
-            assertEquals("3.5.7", patchVersion);
+            System.out.printf("patchVersion is " + patchVersion + " expected " + "3.5.8");
+            assertEquals("3.5.8", patchVersion);
 
             DESEDE_IS_SUPPORTED = false;
             DSA_IS_SUPPORTED = false;
             SHA1_DIGEST_SIGNATURES_ARE_SUPPORTED = false;
-            FIPS_186_4_TYPE_DOMAIN_PARAMETERS_SUPPORTED = false;
+            FIPS_186_4_TYPE_DOMAIN_PARAMETERS_SUPPORTED = true;
             KDF_MIN_PWD_LENGTH = 8;
         } else {
             DESEDE_IS_SUPPORTED = true;
