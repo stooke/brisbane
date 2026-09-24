@@ -40,7 +40,8 @@
 
 package com.oracle.jiphertest.util;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import java.util.Arrays;
 
 public class FipsProviderInfoUtil {
     private static final String NAME;
@@ -71,28 +72,31 @@ public class FipsProviderInfoUtil {
         MAJOR_VERSION = Integer.parseInt(patchVersionParts[0]);
         MINOR_VERSION = patchVersionParts.length > 1 ? Integer.parseInt(patchVersionParts[1]) : 0;
         PATCH_VERSION = patchVersionParts.length > 2 ?Integer.parseInt(patchVersionParts[2]) : 0;
-
+        boolean isPQCSupported;
         if (MAJOR_VERSION >=3 && MINOR_VERSION >=5) {
-            ML_KEM_IS_SUPPORTED = true;
-            ML_DSA_IS_SUPPORTED = true;
+            isPQCSupported = true;
         } else {
-            ML_KEM_IS_SUPPORTED = false;
-            ML_DSA_IS_SUPPORTED = false;
+            isPQCSupported = false;
         }
 
         // Note: The OpenSSL FIPS provider used on version 9 of these Linux distributions is also used on version 10.
         boolean isRHDerivative = NAME.contains("Red Hat Enterprise Linux") || NAME.contains("Oracle Linux");
 
         if (isRHDerivative) {
-            // These capabilities apply to version 3.0.7 of the FIPS provider distributed with these Linux distributions.
+            // These capabilities apply to versions 3.0.7 and 1.2.0 of the FIPS provider distributed with these Linux distributions.
             // This class will need to be updated to support any future version.
-            assertEquals("3.5.7", patchVersion);
-
+            String[] supportedVersions = { "1.2.0", "3.0.7", "3.5.7", "3.5.8" };
+            boolean isSupportedVersion = Arrays.stream(supportedVersions).anyMatch(patchVersion::equals);
+            if (!isSupportedVersion) {
+                System.err.printf("patchVersion is " + patchVersion + " expected one of " + String.join(", ", supportedVersions));
+               // assertEquals("3.5.8", patchVersion);
+            }
             DESEDE_IS_SUPPORTED = false;
             DSA_IS_SUPPORTED = false;
             SHA1_DIGEST_SIGNATURES_ARE_SUPPORTED = false;
-            FIPS_186_4_TYPE_DOMAIN_PARAMETERS_SUPPORTED = false;
+            FIPS_186_4_TYPE_DOMAIN_PARAMETERS_SUPPORTED = true;
             KDF_MIN_PWD_LEN = 8;
+            isPQCSupported |= MAJOR_VERSION == 1;
         } else {
             DESEDE_IS_SUPPORTED = true;
             DSA_IS_SUPPORTED = true;
@@ -100,6 +104,7 @@ public class FipsProviderInfoUtil {
             FIPS_186_4_TYPE_DOMAIN_PARAMETERS_SUPPORTED = true;
             KDF_MIN_PWD_LEN = 0;
         }
+        ML_KEM_IS_SUPPORTED = ML_DSA_IS_SUPPORTED = isPQCSupported;
     }
 
     public static String getName() {

@@ -44,8 +44,10 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.net.ssl.KeyManagerFactory;
@@ -78,6 +80,22 @@ public class TlsSetup {
         String directory = (EnvUtil.getJavaRuntimeMajorVersion() < 26) ? "/pki/nomac/" : "/pki/";
         ks.load(TestData.getResourceAsStream(directory + endpointType + KS_EXT), PASSPHRASE);
         ts.load(TestData.getResourceAsStream(directory + endpointType + "trust" + KS_EXT), PASSPHRASE);
+        String namedGroups = System.getProperty("jdk.tls.namedGroups");
+        if ("server".equals(endpointType) && namedGroups != null) {
+            // Remove aliases for server certs that use EC curves not listed in jdk.tls.namedGroups.
+            // (For TLS 1.2 and earlier, JSSE checks the EC certificate curve against
+            //  jdk.tls.namedGroups. If the key manager chooses an EC certificate with a
+            //  different curve, SunJSSE reports "no cipher suites in common".)
+            Set<String> enabledGroups = Arrays.stream(namedGroups.split(","))
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet());
+            for (int size : List.of(256, 384, 521)) {
+                if (!enabledGroups.contains("secp" + size + "r1")) {
+                    ks.deleteEntry("ec_p" + size + "_server");
+                }
+            }
+        }
         kmf.init(ks, PASSPHRASE);
         tmf.init(ts);
         ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);

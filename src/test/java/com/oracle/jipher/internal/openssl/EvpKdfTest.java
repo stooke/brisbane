@@ -356,12 +356,18 @@ public class EvpKdfTest extends EvpTest {
         OSSL_PARAM iterParam = OSSL_PARAM.ofUnsigned(EVP_KDF.KDF_PARAM_ITER, MIN_ITERATION_COUNT);
         OSSL_PARAM dgstParam = OSSL_PARAM.of(EVP_KDF.KDF_PARAM_DIGEST, MD_ALG);
         OSSL_PARAM passParam = OSSL_PARAM.of(EVP_KDF.KDF_PARAM_PASSWORD, password);
-
+        String fipsProviderName = FipsProviderInfoUtil.getName();
+        String fipsProviderVersion = FipsProviderInfoUtil.getVersionString();
         try {
             kdfCtx.derive(output, saltParam, iterParam, dgstParam, passParam);
-            Assert.assertFalse(FipsProviderInfoUtil.getName().contains("Linux 9"));
+            Assert.assertFalse(fipsProviderName.contains("Linux 9"));
         } catch (OpenSslException e) {
-            //Assert.assertTrue(FipsProviderInfoUtil.getName().contains("Linux 9"));
+            String[] supportedVersions = { "1.2.0", "3.0.7", "3.5.7", "3.5.8" };
+            boolean isSupportedVersion = Arrays.stream(supportedVersions).anyMatch(fipsProviderVersion::startsWith);
+            if (!isSupportedVersion) {
+                System.err.printf("patchVersion is " + fipsProviderVersion + " expected one of " + String.join(", ", supportedVersions));
+               // assertEquals("3.5.8", fipsProviderVersion);
+            }
             Assert.assertTrue(e.getMessage().contains("invalid key length")); // (RHE/O)L error message uses 'key' not 'password'
         }
     }

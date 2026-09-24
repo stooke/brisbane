@@ -93,8 +93,8 @@ final class OsslParam {
 
     static void store(OSSL_PARAM param, MemorySegment paramSeg, long offset, SegmentAllocator allocator) {
         MemorySegment dataSeg;
-        long dataSize = param.dataSize;
         if (param.data != null) {
+            checkDataSize(param);
             dataSeg = switch (param.dataType) {
                 case NONE, UTF8_PTR, OCTET_PTR -> throw new AssertionError();
                 case INTEGER, UNSIGNED_INTEGER, REAL -> storeNumber(param.data, allocator);
@@ -111,7 +111,7 @@ final class OsslParam {
         OSSL_PARAM_KEY_HANDLE.set(paramSeg, offset, constString(param.key));
         OSSL_PARAM_DATA_TYPE_HANDLE.set(paramSeg, offset, param.dataType.ordinal());
         OSSL_PARAM_DATA_HANDLE.set(paramSeg, offset, dataSeg);
-        OSSL_PARAM_DATA_SIZE_HANDLE.set(paramSeg, offset, dataSize);
+        OSSL_PARAM_DATA_SIZE_HANDLE.set(paramSeg, offset, param.dataSize);
         OSSL_PARAM_RETURN_SIZE_HANDLE.set(paramSeg, offset, PARAM_UNMODIFIED);
     }
 
@@ -119,20 +119,28 @@ final class OsslParam {
         long size = 0L;
         if (param.key != null) {
             if (param.data != null) {
-                size += switch (param.dataType) {
+                checkDataSize(param);
+                size = switch (param.dataType) {
                     case INTEGER, UNSIGNED_INTEGER, REAL -> param.dataSize + Long.BYTES - 1L;
                     case UTF8_STRING -> param.dataSize + 1L;
                     case OCTET_STRING -> param.dataSize;
                     case NONE, UTF8_PTR, OCTET_PTR -> throw new AssertionError();
                 };
             } else {
-                size += switch (param.dataType) {
+                size = switch (param.dataType) {
                     case UTF8_PTR, OCTET_PTR -> C_POINTER.byteSize() + C_POINTER.byteAlignment() - 1;
-                    default -> param.dataSize + Long.BYTES - 1;
+                    default -> Math.addExact(param.dataSize, Long.BYTES - 1);
                 };
             }
         }
         return size;
+    }
+
+    // This should only be called when param.data != null.
+    static void checkDataSize(OSSL_PARAM param) {
+        if (param.dataSize != param.data.length) {
+            throw new IllegalArgumentException("OSSL_PARAM dataSize (" + param.dataSize + ") is not equal to data buffer size (" + param.data.length + ")");
+        }
     }
 
     static MemorySegment storeNumber(byte[] data, SegmentAllocator allocator) {
@@ -203,7 +211,6 @@ final class OsslParam {
         long dataSize = (long) OSSL_PARAM_DATA_SIZE_HANDLE.get(paramSeg, offset);
         long returnSize = (long) OSSL_PARAM_RETURN_SIZE_HANDLE.get(paramSeg, offset);
         MemorySegment dataSeg = (MemorySegment) OSSL_PARAM_DATA_HANDLE.get(paramSeg, offset);
-        byte[] data = null;
         if (!useReturnSize || returnSize != PARAM_UNMODIFIED) {
             if ((dataType == Type.UTF8_PTR || dataType == Type.OCTET_PTR) && dataSeg.address() != 0L) {
                 // Dereference the pointer.
@@ -211,14 +218,15 @@ final class OsslParam {
             }
             if (dataSeg.address() != 0L) {
                 dataSeg = dataSeg.asSlice(0L, useReturnSize ? returnSize : dataSize);
-                data = switch (dataType) {
+                byte[] data = switch (dataType) {
                     case NONE -> throw new AssertionError();
                     case INTEGER, UNSIGNED_INTEGER, REAL -> loadNumber(dataSeg);
                     case UTF8_STRING, UTF8_PTR, OCTET_STRING, OCTET_PTR -> dataSeg.toArray(JAVA_BYTE);
                 };
+                return OSSL_PARAM.of(key, dataType, data, returnSize);
             }
         }
-        return new OSSL_PARAM(key, dataType, data, dataSize, returnSize, false);
+        return OSSL_PARAM.of(key, dataType, dataSize, returnSize);
     }
 
     static byte[] loadNumber(MemorySegment dataSeg) {

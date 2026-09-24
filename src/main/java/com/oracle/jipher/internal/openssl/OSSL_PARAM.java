@@ -96,14 +96,24 @@ public final class OSSL_PARAM implements Destroyable {
         this(key, dataType, data, data.length, PARAM_UNMODIFIED, false);
     }
 
-    // Intended to be invoked by decoders.
-    public OSSL_PARAM(String key, Type dataType, byte[] data, long dataSize, long returnSize, boolean sensitive) {
+    OSSL_PARAM(String key, Type dataType, byte[] data, long dataSize, long returnSize, boolean sensitive) {
+        if (dataSize < 0L) {
+            throw new IllegalArgumentException("dataSize must be >= 0");
+        }
         this.key = Objects.requireNonNull(key, "key parameter must not be null");
         this.dataType = Objects.requireNonNull(dataType, "dataType parameter must not be null");
         this.data = data;
         this.dataSize = dataSize;
         this.returnSize = returnSize;
         this.sensitive = sensitive;
+    }
+
+    // Intended to be invoked by decoders.
+    public static OSSL_PARAM of(String key, Type dataType, long dataSize, long returnSize) {
+        return new OSSL_PARAM(key, dataType, null, dataSize, returnSize, false);
+    }
+    public static OSSL_PARAM of(String key, Type dataType, byte[] data, long returnSize) {
+        return new OSSL_PARAM(key, dataType, data, data.length, returnSize, false);
     }
 
     public static OSSL_PARAM of(String key, int data) {

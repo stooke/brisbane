@@ -41,15 +41,14 @@
 [general]
 project=brisbane
 jbs=BRISBANE
-version=20-ea
+version=20.1
 
 [checks]
 error=author,committer,reviewers,merge,issues,executable,symlink,message,whitespace
 warning=issuestitle,binary
 
 [repository]
-; if promotion will tag... uncomment and update
-; tags= <regex of tag format>
+tags=(?:[1-9]\d*(?:\.\d+)*(?:\+\d+|-ga))
 branches=.*
 
 [census]

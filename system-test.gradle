@@ -262,7 +262,11 @@ tasks.register('jsseTest') {
     }
 }
 
-def namedGroups = ['SecP256r1']
+def namedGroups = [
+        'SecP256r1',
+        'SecP384r1',
+        'SecP521r1'
+]
 
 if (TEST_PQC_GROUPS) {
     namedGroups += [

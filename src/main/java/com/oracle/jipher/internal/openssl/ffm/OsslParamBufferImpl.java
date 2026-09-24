@@ -188,9 +188,9 @@ public final class OsslParamBufferImpl implements OsslParamBuffer {
             ++paramCount;
             long bufSize = calcBufferMemoryRequirement(param);
             if (param.sensitive) {
-                totalSensitiveBufSize += bufSize;
+                totalSensitiveBufSize = Math.addExact(totalSensitiveBufSize, bufSize);
             } else {
-                totalBufSize += bufSize;
+                totalBufSize = Math.addExact(totalBufSize, bufSize);
             }
         }
         totalBufSize += (paramCount + 1L) * C_OSSL_PARAM_SIZE;

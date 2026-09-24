@@ -98,6 +98,12 @@ public class TlsSystemTest {
 
         String namedGroups = System.getProperty("jdk.tls.namedGroups");
         if (namedGroups == null || !namedGroups.toUpperCase().contains("MLKEM")) {
+            // TLS 1.2 ECDHE does not require the ephemeral ECDHE group to match the
+            // ECDSA certificate curve. However, JSSE checks the EC certificate curve
+            // against the configured named groups for TLS 1.2 and earlier.
+            // The TLS test PKI includes server certificates for SecP256r1,
+            // SecP384r1 and SecP521r1 to allow testing these named groups for TLS 1.2.
+
             for (String cs : TlsSetup.ciphersuitesV12()) {
                 all.add(new Object[]{getProviderConfigID(), "TLSv1.2", cs});
             }
@@ -132,6 +138,7 @@ public class TlsSystemTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
+
         // Only test with MLKEM named groups if the OpenSSL FIPS provider
         // that Jipher will use during the test supports MLKEM
         if (System.getProperty("jdk.tls.namedGroups", "").toUpperCase().contains("MLKEM")) {

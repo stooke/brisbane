@@ -50,7 +50,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.ProviderException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
-import java.util.Arrays;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
@@ -196,7 +195,6 @@ public abstract class WrapCipher extends SymmCipher {
         }
 
         byte[] outputBounceBuffer = null;
-        byte[] savedOutputData = null;
         boolean doCleanup = true;
         try {
             int position = this.state != null ? this.state.inputBuffer.position() : 0;
@@ -212,12 +210,14 @@ public abstract class WrapCipher extends SymmCipher {
                 }
             }
 
-            // If decrypting in KWP mode and the actual output size could be greater than available space
-            // in the output buffer, allocate a temporary bounce-buffer to receive the output.
+            // If decrypting in KWP mode, allocate a temporary bounce-buffer to receive the output.
             byte[] outBuf;
             int outBufOffset;
-            if (!this.encrypt && this.mode == KWP && outputSize > out.length - outOffset) {
-                outputBounceBuffer = new byte[outputSize];
+            if (!this.encrypt && this.mode == KWP) {
+                // Since OpenSSL's KWP unwrap failure cleanup can write up to one unit beyond the documented
+                // plaintext maximum, use an internal guarded buffer with one-unit (8-byte) guard space when
+                // doing KWP decrypt.
+                outputBounceBuffer = new byte[outputSize + UNIT_BYTES];
 
                 // Output to the output bounce-buffer.
                 outBuf = outputBounceBuffer;
@@ -226,25 +226,6 @@ public abstract class WrapCipher extends SymmCipher {
                 // Output directly to the application-supplied output buffer.
                 outBuf = out;
                 outBufOffset = outOffset;
-
-                // Check for KWP decryption mode.
-                if (minOutputSize < outputSize) {
-                    // When decrypting in KWP mode, if the plaintext is not a multiple of 8 bytes
-                    // then, as an optimization, OpenSSL will write the final 8-byte unit to the
-                    // output buffer complete with the padding bytes (bytes with value zero that
-                    // follow the plaintext to pad it out to a multiple of the 8-byte unit size)
-                    // and then indicate the plaintext size as the amount of output it has produced.
-                    // Although modifying data in the output buffer within the bounds of
-                    // the size returned by engineGetOutputSize() but past the reported output size
-                    // is not explicitly disallowed by javax.crypto.Cipher, doing so deviates from
-                    // the behavior of other existing JCA/JCE providers.
-                    //
-                    // To ensure good interoperability and conform to a strict interpretation of the
-                    // javax.crypto.Cipher JavaDoc, save data in the application's output buffer
-                    // that may be overwritten by OpenSSL's aes-wrap-pad implementation so that it
-                    // can be restored after calling ctx.update().
-                    savedOutputData = Arrays.copyOfRange(outBuf, outBufOffset + minOutputSize, outBufOffset + outputSize);
-                }
             }
 
             // If there is some data buffered in this.state.inputBuffer then use that buffer as the source
@@ -266,10 +247,6 @@ public abstract class WrapCipher extends SymmCipher {
             // Note that while it looks like OpenSSL does not require EVP_CipherFinal_ex to be called
             // for id-aes-wrap and id-aes-wrap-pad, we call it anyway.
             outLen += ctx.doFinal(outBuf, outBufOffset + outLen);
-            if (outLen < outputSize && outLen >= minOutputSize && savedOutputData != null) {
-                // Restore data in the output buffer that was overwritten by padding bytes.
-                System.arraycopy(savedOutputData, outLen - minOutputSize, outBuf, outBufOffset + outLen, outputSize - outLen);
-            }
             if (outLen > outBuf.length - outBufOffset) {
                 throw new AssertionError("Internal error: buffer overrun");
             }
@@ -302,7 +279,6 @@ public abstract class WrapCipher extends SymmCipher {
             }
         } finally {
             Util.clearArray(outputBounceBuffer);
-            Util.clearArray(savedOutputData);
             if (doCleanup) {
                 cleanup();
             }
