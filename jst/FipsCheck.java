@@ -15,9 +15,15 @@ public class FipsCheck {
         printProviders(); 
         listAlgos2();
         installJipher();
+	removeProvider("SunPKCS11-FIPS");
         printProviders();
         listAlgos2();
         printEnforcement();
+    }
+
+    static void removeProvider(String pname) {
+	System.out.println("removing provider " + pname);
+	Security.removeProvider(pname);
     }
 
     static void printEnforcement() {
