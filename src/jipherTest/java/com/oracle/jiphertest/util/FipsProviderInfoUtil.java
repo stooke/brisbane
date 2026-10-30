@@ -85,7 +85,7 @@ public class FipsProviderInfoUtil {
         if (isRHDerivative) {
             // These capabilities apply to versions 3.0.7 and 1.2.0 of the FIPS provider distributed with these Linux distributions.
             // This class will need to be updated to support any future version.
-            String[] supportedVersions = { "1.2.0", "3.0.7", "3.5.7", "3.5.8" };
+            String[] supportedVersions = { "1.2.0", "3.0.7", "3.5.7", "3.5.8", "3.5.9" };
             boolean isSupportedVersion = Arrays.stream(supportedVersions).anyMatch(patchVersion::equals);
             if (!isSupportedVersion) {
                 System.err.printf("patchVersion is " + patchVersion + " expected one of " + String.join(", ", supportedVersions));
