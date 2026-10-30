@@ -58,10 +58,13 @@ import static com.oracle.jiphertest.testdata.DataMatchers.alg;
 import static com.oracle.jiphertest.testdata.DataMatchers.keyId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class EvpPkeyDigestSignatureTest extends EvpTest {
 
     static final Set<String> EMPTY_SET = Collections.<String>emptySet();
+
+    private Version fipsProviderVersion;
 
     private byte[] data;
     private byte[] signature;
@@ -71,6 +74,8 @@ public class EvpPkeyDigestSignatureTest extends EvpTest {
     @Override
     public void setUp() throws Exception {
         super.setUp();
+
+        fipsProviderVersion = new Version(FipsProviderInfoUtil.getVersionString());
 
         SignatureTestVector tv = TestData.getFirst(SignatureTestVector.class, alg("SHA256withECDSA"));
         KeyPairTestData keyPairTestData = TestData.getFirst(KeyPairTestData.class, keyId(tv.getKeyId()));
@@ -93,7 +98,11 @@ public class EvpPkeyDigestSignatureTest extends EvpTest {
         OsslParamBuffer params = signCtx.gettableParams();
         Stream<String> stringStream = Arrays.stream(params.asArray()).map(param -> param.key);
         Set<String> paramKeys = stringStream.collect(Collectors.toSet());
-        assertEquals(EMPTY_SET, paramKeys);
+        if (fipsProviderVersion.compareTo(Version.of("3.5.9")) >= 0) {
+            assertTrue(paramKeys.contains("fips-indicator"));
+        } else if (fipsProviderVersion.compareTo(Version.of("3.0.0")) >= 0) {
+            assertEquals(EMPTY_SET, paramKeys);
+        }
     }
 
     @Test

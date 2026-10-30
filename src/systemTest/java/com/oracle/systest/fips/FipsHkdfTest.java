@@ -68,11 +68,14 @@ public class FipsHkdfTest {
     static final String ALGORITHM = "HKDF-SHA256";
     static final int MIN_SECURITY_STRENGTH = 112; // bit
 
-    // Enforcement of KDF minimum security strength was first added to OpenSSL in version 3.4.0
+    // Enforcement of KDF minimum security strength was first added to OpenSSL in version 3.4.0.
+    // OS-supplied OpenSSL 1.x providers based on Kryoptic also enforce minimum security strength.
     static final boolean OPENSSL_ENFORCES_MIN_SECURITY_STRENGTH =
             (FipsProviderInfoUtil.getMajorVersion() > 3) ||
             (FipsProviderInfoUtil.getMajorVersion() == 3 && FipsProviderInfoUtil.getMinorVersion() >= 4) ||
-            (FipsProviderInfoUtil.getMajorVersion() == 1 && FipsProviderInfoUtil.getMinorVersion() == 2);
+            ((FipsProviderInfoUtil.getName().contains("Red Hat Enterprise Linux") ||
+              FipsProviderInfoUtil.getName().contains("Oracle Linux")) &&
+             FipsProviderInfoUtil.getMajorVersion() == 1);
 
     private final AlgorithmParameterSpec spec;
     private final OperationResult expected;

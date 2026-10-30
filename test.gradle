@@ -326,8 +326,6 @@ tasks.register('lifeCycleHookTest', Test) {
 }
 
 project.ext.commonIntegrationTestConfig =  {
-
-    group = 'verification'
     testClassesDirs = sourceSets.intTest.output.classesDirs
     classpath = sourceSets.intTest.runtimeClasspath
     exclude '**/*Suite.class'
@@ -358,6 +356,7 @@ project.ext.commonIntegrationTestConfig =  {
 
 tasks.register('integrationTest', Test) {
     description = 'Runs integration tests.'
+    group = 'verification'
     configure project.ext.commonIntegrationTestConfig
     useJUnitPlatform {
         includeEngines 'junit-jupiter', 'junit-vintage'
@@ -369,6 +368,7 @@ tasks.register('integrationTest', Test) {
 
 tasks.register('needForkTest', Test) {
     description = 'Runs integration tests which need a separate JVM.'
+    group = 'verification'
     configure project.ext.commonIntegrationTestConfig
     useJUnitPlatform {
         includeEngines 'junit-jupiter'

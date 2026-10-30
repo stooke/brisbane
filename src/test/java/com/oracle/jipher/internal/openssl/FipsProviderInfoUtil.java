@@ -69,8 +69,8 @@ public class FipsProviderInfoUtil {
             try {
                 majorVersion = Integer.parseInt(versionComponents[0]);
                 minorVersion = Integer.parseInt(versionComponents[1]);
-                // FIPS certified support for PQC requires minor version >=5.
-                isPQCSupported = (majorVersion == 3 && minorVersion >= 5);
+                // FIPS certified support for PQC requires OpenSSL 3.5 or later.
+                isPQCSupported = (majorVersion >= 4 || (majorVersion == 3 && minorVersion >= 5));
             } catch (NumberFormatException e) {
                 isPQCSupported = false;
             }
@@ -79,14 +79,10 @@ public class FipsProviderInfoUtil {
         boolean isRHDerivative = NAME.contains("Red Hat Enterprise Linux") || NAME.contains("Oracle Linux");
 
         if (isRHDerivative) {
-            // These capabilities apply to versions 3.0.7 and 1.2.0 of the FIPS provider distributed with these Linux distributions.
+            // These capabilities apply to versions 3.0.7, 1.2.0 and 1.5.2
+            // of the FIPS provider distributed with these Linux distributions.
             // This class will need to be updated to support any future version.
-            String[] supportedVersions = { "1.2.0", "3.0.7", "3.5.7", "3.5.8", "3.5.9" };
-            boolean isSupportedVersion = Arrays.stream(supportedVersions).anyMatch(patchVersion::equals);
-            if (!isSupportedVersion) {
-                System.err.printf("patchVersion is " + patchVersion + " expected one of " + String.join(",", supportedVersions));
-               // assertEquals("3.5.8", patchVersion);
-            }
+            assertTrue("3.0.7".equals(patchVersion) || "3.0.7".equals(patchVersion) || "1.2.0".equals(patchVersion) || "1.5.2".equals(patchVersion));
 
             DESEDE_IS_SUPPORTED = false;
             DSA_IS_SUPPORTED = false;
@@ -99,7 +95,11 @@ public class FipsProviderInfoUtil {
             DSA_IS_SUPPORTED = true;
             SHA1_DIGEST_SIGNATURES_ARE_SUPPORTED = true;
             FIPS_186_4_TYPE_DOMAIN_PARAMETERS_SUPPORTED = true;
-            KDF_MIN_PWD_LENGTH = 0;
+            if (VERSION.startsWith("4")) {
+                KDF_MIN_PWD_LENGTH = 8;
+            } else {
+                KDF_MIN_PWD_LENGTH = 0;
+            }
         }
         ML_KEM_IS_SUPPORTED = isPQCSupported;
         ML_DSA_IS_SUPPORTED = isPQCSupported;

@@ -73,7 +73,8 @@ public class FipsProviderInfoUtil {
         MINOR_VERSION = patchVersionParts.length > 1 ? Integer.parseInt(patchVersionParts[1]) : 0;
         PATCH_VERSION = patchVersionParts.length > 2 ?Integer.parseInt(patchVersionParts[2]) : 0;
         boolean isPQCSupported;
-        if (MAJOR_VERSION >=3 && MINOR_VERSION >=5) {
+        // FIPS certified support for PQC requires OpenSSL 3.5 or later.
+        if (MAJOR_VERSION >= 4 || (MAJOR_VERSION >=3 && MINOR_VERSION >=5)) {
             isPQCSupported = true;
         } else {
             isPQCSupported = false;
@@ -83,14 +84,10 @@ public class FipsProviderInfoUtil {
         boolean isRHDerivative = NAME.contains("Red Hat Enterprise Linux") || NAME.contains("Oracle Linux");
 
         if (isRHDerivative) {
-            // These capabilities apply to versions 3.0.7 and 1.2.0 of the FIPS provider distributed with these Linux distributions.
+            // These capabilities apply to versions 3.0.7, 1.2.0, and 1.5.2
+            // of the FIPS provider distributed with these Linux distributions.
             // This class will need to be updated to support any future version.
-            String[] supportedVersions = { "1.2.0", "3.0.7", "3.5.7", "3.5.8", "3.5.9" };
-            boolean isSupportedVersion = Arrays.stream(supportedVersions).anyMatch(patchVersion::equals);
-            if (!isSupportedVersion) {
-                System.err.printf("patchVersion is " + patchVersion + " expected one of " + String.join(", ", supportedVersions));
-               // assertEquals("3.5.8", patchVersion);
-            }
+            assertTrue("3.5.9".equals(patchVersion) || "3.0.7".equals(patchVersion) || "1.2.0".equals(patchVersion) || "1.5.2".equals(patchVersion));
             DESEDE_IS_SUPPORTED = false;
             DSA_IS_SUPPORTED = false;
             SHA1_DIGEST_SIGNATURES_ARE_SUPPORTED = false;

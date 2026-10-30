@@ -247,6 +247,11 @@ public abstract class WrapCipher extends SymmCipher {
             // Note that while it looks like OpenSSL does not require EVP_CipherFinal_ex to be called
             // for id-aes-wrap and id-aes-wrap-pad, we call it anyway.
             outLen += ctx.doFinal(outBuf, outBufOffset + outLen);
+            // After a successful native doFinal() call, we must restore the state established by
+            // init() so the cipher is available to encrypt or decrypt more data.
+            // OpenSSL wrap contexts allow only one update per initialization, so re-initialize here
+            // before a possible ShortBufferException to also permit retrying the operation.
+            ctx.reInit();
             if (outLen > outBuf.length - outBufOffset) {
                 throw new AssertionError("Internal error: buffer overrun");
             }

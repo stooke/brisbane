@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 import com.oracle.jipher.internal.common.Util;
@@ -352,23 +353,23 @@ public class EvpKdfTest extends EvpTest {
         byte[] password = new byte[8 - 1];
         byte[] output = new byte[16];
 
+        Assume.assumeTrue(FipsProviderInfoUtil.getKDFMinPwdLen() >= 8);
+
         OSSL_PARAM saltParam = OSSL_PARAM.of(EVP_KDF.KDF_PARAM_SALT, salt);
         OSSL_PARAM iterParam = OSSL_PARAM.ofUnsigned(EVP_KDF.KDF_PARAM_ITER, MIN_ITERATION_COUNT);
         OSSL_PARAM dgstParam = OSSL_PARAM.of(EVP_KDF.KDF_PARAM_DIGEST, MD_ALG);
         OSSL_PARAM passParam = OSSL_PARAM.of(EVP_KDF.KDF_PARAM_PASSWORD, password);
         String fipsProviderName = FipsProviderInfoUtil.getName();
-        String fipsProviderVersion = FipsProviderInfoUtil.getVersionString();
         try {
             kdfCtx.derive(output, saltParam, iterParam, dgstParam, passParam);
-            Assert.assertFalse(fipsProviderName.contains("Linux 9"));
+            Assert.fail("Invalid password length accepted");
         } catch (OpenSslException e) {
-            String[] supportedVersions = { "1.2.0", "3.0.7", "3.5.7", "3.5.8", "3.5.9" };
-            boolean isSupportedVersion = Arrays.stream(supportedVersions).anyMatch(fipsProviderVersion::startsWith);
-            if (!isSupportedVersion) {
-                System.err.printf("patchVersion is " + fipsProviderVersion + " expected one of " + String.join(", ", supportedVersions));
-               // assertEquals("3.5.8", fipsProviderVersion);
+            // RedHat/Oracle Linux FIPS module error message uses 'key' not 'password'
+            if (fipsProviderName.contains("Red Hat Enterprise Linux") || fipsProviderName.contains("Oracle Linux")) {
+                Assert.assertTrue(e.getMessage().contains("invalid key length"));
+            } else {
+                Assert.assertTrue(e.getMessage().contains("password strength too weak"));
             }
-            Assert.assertTrue(e.getMessage().contains("invalid key length")); // (RHE/O)L error message uses 'key' not 'password'
         }
     }
 

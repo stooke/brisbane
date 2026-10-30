@@ -78,6 +78,8 @@ public class EvpMdTest extends EvpTest {
     static final int SHA_256_MD_SIZE = 32;
     static final int SHA_256_MD_BLOCK_SIZE = 64;
 
+    private Version fipsProviderVersion;
+
     private String jcaAlg;
     private String alg;
     private byte[] data;
@@ -91,6 +93,8 @@ public class EvpMdTest extends EvpTest {
     @Override
     public void setUp() throws Exception {
         super.setUp();
+
+        fipsProviderVersion = new Version(FipsProviderInfoUtil.getVersionString());
 
         jcaAlg = "SHA-256";
         alg = EVP_MD.DIGEST_NAME_SHA2_256;
@@ -161,7 +165,11 @@ public class EvpMdTest extends EvpTest {
         OsslParamBuffer params = md.gettableCtxParams();
         Stream<String> stringStream = Arrays.stream(params.asArray()).map(param -> param.key);
         Set<String> paramKeys = stringStream.collect(Collectors.toSet());
-        assertEquals(EMPTY_SET, paramKeys);
+        if (fipsProviderVersion.compareTo(Version.of("3.5.9")) >= 0) {
+            assertTrue(paramKeys.contains("fips-indicator"));
+        } else if (fipsProviderVersion.compareTo(Version.of("3.0.0")) >= 0) {
+            assertEquals(EMPTY_SET, paramKeys);
+        }
     }
 
     @Test
@@ -270,7 +278,11 @@ public class EvpMdTest extends EvpTest {
         OsslParamBuffer params = mdCtx.gettableParams();
         Stream<String> stringStream = Arrays.stream(params.asArray()).map(param -> param.key);
         Set<String> paramKeys = stringStream.collect(Collectors.toSet());
-        assertEquals(EMPTY_SET, paramKeys);
+        if (fipsProviderVersion.compareTo(Version.of("3.5.9")) >= 0) {
+            assertTrue(paramKeys.contains("fips-indicator"));
+        } else if (fipsProviderVersion.compareTo(Version.of("3.0.0")) >= 0) {
+            assertEquals(EMPTY_SET, paramKeys);
+        }
     }
 
     @Test

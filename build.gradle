@@ -140,7 +140,6 @@ def manifestAttributes() {
         'Build-Date' : buildDate(),
         'Build-Commit' : commitId(),
         'Build-Jdk' : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
-        'Automatic-Module-Name' : 'com.oracle.jipher',
         'Main-Class' : 'com.oracle.jipher.provider.JipherJCE'
        ]
 }
