@@ -31,3 +31,8 @@ output_ocibuild*/
 
 # MacOS
 .DS_Store
+
+# JST
+jst/jdk*
+jst/OpenJDK*
+bin/

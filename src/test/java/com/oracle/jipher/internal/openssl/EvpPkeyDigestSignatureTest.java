@@ -93,6 +93,10 @@ public class EvpPkeyDigestSignatureTest extends EvpTest {
         OsslParamBuffer params = signCtx.gettableParams();
         Stream<String> stringStream = Arrays.stream(params.asArray()).map(param -> param.key);
         Set<String> paramKeys = stringStream.collect(Collectors.toSet());
+        System.err.printf("111 paramKeys = %s\n", paramKeys.toString());
+        for (var x : params.asArray()) {
+            System.err.printf(" param %s\n", x.toString());
+        }
         assertEquals(EMPTY_SET, paramKeys);
     }
 

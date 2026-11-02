@@ -362,7 +362,7 @@ public class EvpKdfTest extends EvpTest {
             kdfCtx.derive(output, saltParam, iterParam, dgstParam, passParam);
             Assert.assertFalse(fipsProviderName.contains("Linux 9"));
         } catch (OpenSslException e) {
-            String[] supportedVersions = { "1.2.0", "3.0.7", "3.5.7", "3.5.8" };
+            String[] supportedVersions = { "1.2.0", "3.0.7", "3.5.7", "3.5.8", "3.5.9" };
             boolean isSupportedVersion = Arrays.stream(supportedVersions).anyMatch(fipsProviderVersion::startsWith);
             if (!isSupportedVersion) {
                 System.err.printf("patchVersion is " + fipsProviderVersion + " expected one of " + String.join(", ", supportedVersions));
